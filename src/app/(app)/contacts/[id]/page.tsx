@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StageSelect } from "@/components/contacts/stage-select";
+import { ActivityTimeline } from "@/components/contacts/activity-timeline";
 import { QuoteStatusSelect } from "@/components/quotes/quote-status-select";
 
 const CURRENCY = new Intl.NumberFormat("en-US", {
@@ -131,19 +132,8 @@ export default async function ContactDetailPage(props: {
             Activity
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {contact.activities.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity yet.</p>
-          ) : (
-            contact.activities.map((a) => (
-              <div key={a.id} className="border-l-2 pl-3 text-sm">
-                <div className="text-xs text-muted-foreground">
-                  {a.occurredAt.toLocaleString()} · {a.type}
-                </div>
-                <div>{a.body}</div>
-              </div>
-            ))
-          )}
+        <CardContent>
+          <ActivityTimeline contactId={contact.id} activities={contact.activities} />
         </CardContent>
       </Card>
     </div>
