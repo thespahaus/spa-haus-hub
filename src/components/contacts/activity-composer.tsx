@@ -39,7 +39,11 @@ export function ActivityComposer({ contactId }: { contactId: string }) {
       <div className="flex items-center gap-2">
         <Select value={type} onValueChange={(v) => v && setType(v)}>
           <SelectTrigger size="sm" className="w-28">
-            <SelectValue />
+            <SelectValue>
+              {(value: string) =>
+                TYPES.find((t) => t.value === value)?.label ?? value
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {TYPES.map((t) => (

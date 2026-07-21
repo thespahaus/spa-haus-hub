@@ -32,7 +32,11 @@ export function StageSelect({
       }}
     >
       <SelectTrigger className="w-40">
-        <SelectValue />
+        <SelectValue>
+          {(value: string) =>
+            STAGE_LABELS[value as keyof typeof STAGE_LABELS] ?? value
+          }
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {PIPELINE_STAGES.map((s) => (

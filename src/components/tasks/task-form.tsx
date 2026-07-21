@@ -12,27 +12,55 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Defaults = {
-  title?: string;
-  description?: string | null;
-  amount?: number | string;
-};
-
-export function QuoteForm({
+export function TaskForm({
   action,
-  contacts,
+  users,
   fixedContact,
-  defaults,
-  submitLabel,
+  contacts,
+  defaultAssigneeId,
 }: {
   action: (formData: FormData) => void;
-  contacts?: { id: string; firstName: string; lastName: string }[];
+  users: { id: string; name: string }[];
   fixedContact?: { id: string; firstName: string; lastName: string };
-  defaults?: Defaults;
-  submitLabel: string;
+  contacts?: { id: string; firstName: string; lastName: string }[];
+  defaultAssigneeId?: string;
 }) {
   return (
     <form action={action} className="flex flex-col gap-4 max-w-lg">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="title">Title</Label>
+        <Input id="title" name="title" required autoFocus />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea id="description" name="description" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="dueDate">Due date</Label>
+          <Input id="dueDate" name="dueDate" type="date" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="assigneeId">Assignee</Label>
+          <Select name="assigneeId" defaultValue={defaultAssigneeId}>
+            <SelectTrigger id="assigneeId" className="w-full">
+              <SelectValue placeholder="Choose a person">
+                {(value: string) =>
+                  users.find((u) => u.id === value)?.name ?? value
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {fixedContact ? (
         <div className="flex flex-col gap-2">
           <Label>Contact</Label>
@@ -43,10 +71,10 @@ export function QuoteForm({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="contactId">Contact</Label>
+          <Label htmlFor="contactId">Related Contact (optional)</Label>
           <Select name="contactId">
             <SelectTrigger id="contactId" className="w-full">
-              <SelectValue placeholder="Choose a contact">
+              <SelectValue placeholder="None">
                 {(value: string) => {
                   const c = contacts?.find((c) => c.id === value);
                   return c ? `${c.firstName} ${c.lastName}` : value;
@@ -64,39 +92,8 @@ export function QuoteForm({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          name="title"
-          placeholder="e.g. Hot Springs Grandee — 7-seat"
-          defaultValue={defaults?.title}
-          required
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          id="amount"
-          name="amount"
-          type="number"
-          step="0.01"
-          min="0"
-          defaultValue={defaults?.amount}
-          required
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          placeholder="Model, color, add-ons, install notes..."
-          defaultValue={defaults?.description ?? ""}
-        />
-      </div>
       <Button type="submit" className="mt-2 w-fit">
-        {submitLabel}
+        Create Task
       </Button>
     </form>
   );

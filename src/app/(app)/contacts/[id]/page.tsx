@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StageSelect } from "@/components/contacts/stage-select";
 import { ActivityTimeline } from "@/components/contacts/activity-timeline";
 import { QuoteStatusSelect } from "@/components/quotes/quote-status-select";
+import { TaskStatusSelect } from "@/components/tasks/task-status-select";
+import { formatDueDate } from "@/lib/utils";
 
 const CURRENCY = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -23,6 +25,10 @@ export default async function ContactDetailPage(props: {
       owner: { select: { name: true } },
       activities: { orderBy: { occurredAt: "desc" } },
       quotes: { orderBy: { createdAt: "desc" } },
+      tasks: {
+        orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
+        include: { assignee: { select: { name: true } } },
+      },
     },
   });
 
@@ -115,13 +121,32 @@ export default async function ContactDetailPage(props: {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-sm text-muted-foreground">
               Tasks
             </CardTitle>
+            <Link
+              href={`/tasks/new?contactId=${contact.id}`}
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              + New
+            </Link>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Tasks land here next.
+          <CardContent className="flex flex-col gap-3">
+            {contact.tasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tasks yet.</p>
+            ) : (
+              contact.tasks.map((t) => (
+                <div key={t.id} className="flex flex-col gap-1 text-sm">
+                  <div className="font-medium">{t.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t.dueDate ? formatDueDate(t.dueDate) : "No due date"}{" "}
+                    · {t.assignee.name}
+                  </div>
+                  <TaskStatusSelect taskId={t.id} status={t.status} />
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

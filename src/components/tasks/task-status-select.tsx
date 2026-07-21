@@ -1,8 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { updateQuoteStatus } from "@/actions/quotes";
-import { QUOTE_STATUSES, QUOTE_STATUS_LABELS } from "@/lib/validation/quote";
+import { updateTaskStatus } from "@/actions/tasks";
+import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/validation/task";
 import {
   Select,
   SelectContent,
@@ -11,11 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function QuoteStatusSelect({
-  quoteId,
+export function TaskStatusSelect({
+  taskId,
   status,
 }: {
-  quoteId: string;
+  taskId: string;
   status: string;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -27,22 +27,22 @@ export function QuoteStatusSelect({
       onValueChange={(value) => {
         if (!value) return;
         startTransition(() => {
-          updateQuoteStatus(quoteId, value);
+          updateTaskStatus(taskId, value);
         });
       }}
     >
-      <SelectTrigger size="sm" className="w-36">
+      <SelectTrigger size="sm" className="w-32">
         <SelectValue>
           {(value: string) =>
-            QUOTE_STATUS_LABELS[value as keyof typeof QUOTE_STATUS_LABELS] ??
+            TASK_STATUS_LABELS[value as keyof typeof TASK_STATUS_LABELS] ??
             value
           }
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {QUOTE_STATUSES.map((s) => (
+        {TASK_STATUSES.map((s) => (
           <SelectItem key={s} value={s}>
-            {QUOTE_STATUS_LABELS[s]}
+            {TASK_STATUS_LABELS[s]}
           </SelectItem>
         ))}
       </SelectContent>
