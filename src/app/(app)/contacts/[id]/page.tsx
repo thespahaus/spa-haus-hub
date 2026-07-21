@@ -4,6 +4,12 @@ import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StageSelect } from "@/components/contacts/stage-select";
+import { QuoteStatusSelect } from "@/components/quotes/quote-status-select";
+
+const CURRENCY = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 
 export default async function ContactDetailPage(props: {
   params: Promise<{ id: string }>;
@@ -15,6 +21,7 @@ export default async function ContactDetailPage(props: {
     include: {
       owner: { select: { name: true } },
       activities: { orderBy: { occurredAt: "desc" } },
+      quotes: { orderBy: { createdAt: "desc" } },
     },
   });
 
@@ -73,13 +80,36 @@ export default async function ContactDetailPage(props: {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-sm text-muted-foreground">
               Quotes
             </CardTitle>
+            <Link
+              href={`/quotes/new?contactId=${contact.id}`}
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              + New
+            </Link>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Quotes land here next.
+          <CardContent className="flex flex-col gap-3">
+            {contact.quotes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No quotes yet.</p>
+            ) : (
+              contact.quotes.map((q) => (
+                <div key={q.id} className="flex flex-col gap-1 text-sm">
+                  <Link
+                    href={`/quotes/${q.id}/edit`}
+                    className="font-medium hover:underline"
+                  >
+                    {q.title}
+                  </Link>
+                  <div className="text-xs text-muted-foreground">
+                    {CURRENCY.format(Number(q.amount))}
+                  </div>
+                  <QuoteStatusSelect quoteId={q.id} status={q.status} />
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
