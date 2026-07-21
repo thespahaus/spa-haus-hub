@@ -92,7 +92,7 @@ model Contact {
 model Quote {
   id        String  @id @default(cuid())
   contactId String
-  contact   Contact @relation(fields: [contactId], references: [id])
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
   ownerId   String
   owner     User    @relation("QuoteOwner", fields: [ownerId], references: [id])
 
@@ -114,7 +114,7 @@ model Quote {
 model Activity {
   id        String  @id @default(cuid())
   contactId String
-  contact   Contact @relation(fields: [contactId], references: [id])
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
   authorId  String?
   author    User?   @relation(fields: [authorId], references: [id])
 
@@ -140,7 +140,7 @@ model Task {
   createdBy   User   @relation("CreatedTasks", fields: [createdById], references: [id])
 
   contactId String?
-  contact   Contact? @relation(fields: [contactId], references: [id])
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
   completedAt DateTime?
 
