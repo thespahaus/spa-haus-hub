@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
+import { can } from "@/lib/permissions";
 import { quoteSchema, QUOTE_STATUSES, QUOTE_STATUS_LABELS } from "@/lib/validation/quote";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
@@ -15,7 +16,9 @@ const CURRENCY = new Intl.NumberFormat("en-US", {
 
 export async function createQuote(formData: FormData) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "quote:write")) {
+    throw new Error("Unauthorized");
+  }
 
   const parsed = quoteSchema.safeParse({
     contactId: formData.get("contactId"),
@@ -51,7 +54,9 @@ export async function createQuote(formData: FormData) {
 
 export async function updateQuoteStatus(quoteId: string, status: string) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "quote:write")) {
+    throw new Error("Unauthorized");
+  }
 
   if (!QUOTE_STATUSES.includes(status as (typeof QUOTE_STATUSES)[number])) {
     throw new Error("Invalid status");
@@ -89,7 +94,9 @@ export async function updateQuoteStatus(quoteId: string, status: string) {
 
 export async function updateQuote(quoteId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "quote:write")) {
+    throw new Error("Unauthorized");
+  }
 
   const existing = await db.quote.findUnique({ where: { id: quoteId } });
   if (!existing) throw new Error("Quote not found");

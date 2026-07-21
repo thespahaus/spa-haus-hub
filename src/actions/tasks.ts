@@ -5,12 +5,15 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
+import { can } from "@/lib/permissions";
 import { taskSchema, TASK_STATUSES } from "@/lib/validation/task";
 import type { TaskStatus } from "@/generated/prisma/enums";
 
 export async function createTask(formData: FormData) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "task:write")) {
+    throw new Error("Unauthorized");
+  }
 
   const contactId = formData.get("contactId");
   const parsed = taskSchema.safeParse({
@@ -54,7 +57,9 @@ export async function createTask(formData: FormData) {
 
 export async function updateTaskStatus(taskId: string, status: string) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "task:write")) {
+    throw new Error("Unauthorized");
+  }
 
   if (!TASK_STATUSES.includes(status as (typeof TASK_STATUSES)[number])) {
     throw new Error("Invalid status");

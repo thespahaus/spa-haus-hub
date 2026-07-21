@@ -20,9 +20,3 @@ export function can(user: PermissionUser, _action: Action): boolean {
   if (user.role === "OWNER") return true;
   return false;
 }
-
-export function requireOwner(user: PermissionUser) {
-  if (!user || user.role !== "OWNER") {
-    throw new Error("Unauthorized");
-  }
-}

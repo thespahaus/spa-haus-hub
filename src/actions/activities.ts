@@ -3,13 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
+import { can } from "@/lib/permissions";
 import type { ActivityType } from "@/generated/prisma/enums";
 
 const MANUAL_TYPES = ["NOTE", "CALL", "MEETING"] as const;
 
 export async function createManualActivity(contactId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "activity:write")) {
+    throw new Error("Unauthorized");
+  }
 
   const type = formData.get("type");
   const body = formData.get("body");

@@ -5,12 +5,15 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
+import { can } from "@/lib/permissions";
 import { contactSchema, PIPELINE_STAGES, STAGE_LABELS } from "@/lib/validation/contact";
 import type { PipelineStage } from "@/generated/prisma/enums";
 
 export async function createContact(formData: FormData) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "contact:write")) {
+    throw new Error("Unauthorized");
+  }
 
   const parsed = contactSchema.safeParse({
     firstName: formData.get("firstName"),
@@ -49,7 +52,9 @@ export async function createContact(formData: FormData) {
 
 export async function updateContactStage(contactId: string, stage: string) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "contact:write")) {
+    throw new Error("Unauthorized");
+  }
 
   if (!PIPELINE_STAGES.includes(stage as (typeof PIPELINE_STAGES)[number])) {
     throw new Error("Invalid stage");
@@ -78,7 +83,9 @@ export async function updateContactStage(contactId: string, stage: string) {
 
 export async function updateContact(contactId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user || !can(session.user, "contact:write")) {
+    throw new Error("Unauthorized");
+  }
 
   const parsed = contactSchema.safeParse({
     firstName: formData.get("firstName"),
