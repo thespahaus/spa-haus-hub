@@ -7,6 +7,7 @@ import { StageSelect } from "@/components/contacts/stage-select";
 import { ActivityTimeline } from "@/components/contacts/activity-timeline";
 import { QuoteStatusSelect } from "@/components/quotes/quote-status-select";
 import { TaskStatusSelect } from "@/components/tasks/task-status-select";
+import { InstallationStageSelect } from "@/components/installation/installation-stage-select";
 import { formatDueDate } from "@/lib/utils";
 import { SHELL_COLOR_LABELS, CABINET_COLOR_LABELS } from "@/lib/validation/quote";
 
@@ -30,6 +31,7 @@ export default async function ContactDetailPage(props: {
         orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
         include: { assignee: { select: { name: true } } },
       },
+      installations: { orderBy: { createdAt: "desc" } },
     },
   });
 
@@ -167,6 +169,32 @@ export default async function ContactDetailPage(props: {
           </CardContent>
         </Card>
       </div>
+
+      {contact.installations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">
+              Installation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {contact.installations.map((inst) => (
+              <div key={inst.id} className="flex flex-col gap-2">
+                <InstallationStageSelect
+                  installationId={inst.id}
+                  stage={inst.stage}
+                />
+                <Link
+                  href={`/installations/${inst.id}`}
+                  className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit"
+                >
+                  Open full checklist →
+                </Link>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

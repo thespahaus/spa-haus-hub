@@ -100,6 +100,24 @@ export async function updateQuoteStatus(quoteId: string, status: string) {
     body: `Quote "${existing.title}" moved from ${QUOTE_STATUS_LABELS[existing.status as keyof typeof QUOTE_STATUS_LABELS]} to ${QUOTE_STATUS_LABELS[status as keyof typeof QUOTE_STATUS_LABELS]}.`,
   });
 
+  if (status === "ACCEPTED") {
+    const existingInstallation = await db.installation.findUnique({
+      where: { quoteId },
+    });
+    if (!existingInstallation) {
+      const installation = await db.installation.create({
+        data: { quoteId, contactId: existing.contactId },
+      });
+      await logActivity({
+        contactId: existing.contactId,
+        authorId: session.user.id,
+        type: "STATUS_CHANGE",
+        body: "Installation tracking started.",
+      });
+      revalidatePath(`/installations/${installation.id}`);
+    }
+  }
+
   revalidatePath("/quotes");
   revalidatePath(`/contacts/${existing.contactId}`);
 }
