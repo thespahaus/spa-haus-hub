@@ -50,7 +50,9 @@ export default async function AppLayout({
             }}
           >
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span>{session.user.name}</span>
+              <Link href="/account" className="hover:text-foreground">
+                {session.user.name}
+              </Link>
               <Button type="submit" variant="outline" size="sm">
                 Sign out
               </Button>
