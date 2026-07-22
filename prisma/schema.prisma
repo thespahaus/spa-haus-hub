@@ -49,6 +49,47 @@ enum TaskStatus {
   CANCELED
 }
 
+enum ShellColor {
+  SILVER_MARBLE
+  STORM_CLOUDS
+  TUSCAN_SUN
+  SMOKEY_MOUNTAINS
+  MIDNIGHT_CANYON
+}
+
+enum CabinetColor {
+  MODERN_MOCHA
+  CHARCOAL
+  LIGHT_FOG
+}
+
+enum Voltage {
+  V110
+  V220_240
+}
+
+enum Sanitizer {
+  BROMINE
+  CHLORINE
+}
+
+enum PaymentMethod {
+  CASH_CHECK
+  DEBIT_ACH
+  CREDIT_CARD
+  WELLS_FARGO_FINANCING
+}
+
+enum InstallationStage {
+  ORDER_PRODUCTION
+  SITE_PREP
+  ELECTRICAL_PREP
+  DELIVERY
+  FILL_POWER_ON
+  INSTALL_VISIT
+  STARTUP_CALL
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -84,9 +125,10 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  quotes     Quote[]
-  activities Activity[]
-  tasks      Task[]
+  quotes        Quote[]
+  activities    Activity[]
+  tasks         Task[]
+  installations Installation[]
 }
 
 model Quote {
@@ -103,12 +145,23 @@ model Quote {
   sentAt      DateTime?
   decidedAt   DateTime?
 
-  // Forward-compat: Phase 2 QBO sync target
-  qboEstimateId String?   @unique
-  qboSyncedAt   DateTime?
+  // Product configuration, from the real Sales Agreement (sent via PandaDoc today)
+  productModel  String?
+  shellColor    ShellColor?
+  cabinetColor  CabinetColor?
+  voltage       Voltage?
+  sanitizer     Sanitizer?
+  paymentMethod PaymentMethod?
+
+  // Forward-compat: future integration sync targets
+  qboEstimateId      String?   @unique
+  qboSyncedAt        DateTime?
+  pandaDocDocumentId String?   @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  installation Installation?
 }
 
 model Activity {
@@ -146,4 +199,56 @@ model Task {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Installation {
+  id        String  @id @default(cuid())
+  quoteId   String  @unique
+  quote     Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  stage InstallationStage @default(ORDER_PRODUCTION)
+
+  scheduledDeliveryDate DateTime?
+  deliveredAt           DateTime?
+
+  // Install-visit header, filled in on-site during the after-sales visit
+  visitDate     DateTime?
+  arrivalTime   DateTime?
+  departureTime DateTime?
+  serialNumber  String?
+  gfciBrand     String?
+  gfciAmperage  String?
+
+  // Delivery-confirmation checklist
+  chemicalKitPresent        Boolean?
+  coverLifterBoxPresent     Boolean?
+  stepsBoxPresent           Boolean?
+  coverClipsHardwarePresent Boolean?
+  otherAccessoriesPresent   Boolean?
+  waterFilled               Boolean?
+  powerOn                   Boolean?
+
+  // ~15 pass/fail checklist groups (Steps, Cover, Cover Lifter, Cover Clips, Initial
+  // Startup, Topside Controls, Jet Pumps, Jets/Valves, Waterfalls, Lights &
+  // Entertainment, Leak/Visual, Customer Handoff) — typed via a shared TS interface
+  // rather than dozens of columns nothing filters or reports on individually.
+  checklist Json?
+
+  issuesNotes      String?
+  photosTaken      Boolean?
+  followUpWarranty Boolean @default(false)
+  followUpService  Boolean @default(false)
+  followUpParts    Boolean @default(false)
+
+  installerSignedAt DateTime?
+  customerSignedAt  DateTime?
+  startupCallAt     DateTime?
+  startupCallNotes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([contactId])
 }
