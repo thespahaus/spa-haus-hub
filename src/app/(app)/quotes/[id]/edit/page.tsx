@@ -27,6 +27,7 @@ export default async function EditQuotePage(props: {
           description: quote.description,
           amount: quote.amount.toString(),
           productModel: quote.productModel,
+          dimensions: quote.dimensions,
           shellColor: quote.shellColor,
           cabinetColor: quote.cabinetColor,
           voltage: quote.voltage,

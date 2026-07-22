@@ -128,6 +128,48 @@ export async function updateInstallationStage(
   revalidatePath(`/installations/${installationId}`);
 }
 
+export async function updateInstallationPrep(
+  installationId: string,
+  formData: FormData,
+) {
+  const session = await auth();
+  if (!session?.user || !can(session.user, "installation:write")) {
+    throw new Error("Unauthorized");
+  }
+
+  const existing = await db.installation.findUnique({
+    where: { id: installationId },
+  });
+  if (!existing) throw new Error("Installation not found");
+
+  const prepConfirmed = formData.get("prepConfirmed") === "on";
+
+  await db.installation.update({
+    where: { id: installationId },
+    data: {
+      prepConfirmed,
+      prepConfirmedAt: prepConfirmed
+        ? (existing.prepConfirmedAt ?? new Date())
+        : null,
+      prepNotes: textOrNull(formData.get("prepNotes")),
+    },
+  });
+
+  if (prepConfirmed !== existing.prepConfirmed) {
+    await logActivity({
+      contactId: existing.contactId,
+      authorId: session.user.id,
+      type: "STATUS_CHANGE",
+      body: prepConfirmed
+        ? "Site & electrical prep confirmed — contractor and install date lined up."
+        : "Site & electrical prep marked as not confirmed.",
+    });
+  }
+
+  revalidatePath(`/installations/${installationId}`);
+  revalidatePath(`/contacts/${existing.contactId}`);
+}
+
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
   if (typeof value !== "string" || !value) return null;
   const d = new Date(value);

@@ -31,6 +31,7 @@ type Defaults = {
   description?: string | null;
   amount?: number | string;
   productModel?: string | null;
+  dimensions?: string | null;
   shellColor?: string | null;
   cabinetColor?: string | null;
   voltage?: string | null;
@@ -128,14 +129,25 @@ export function QuoteForm({
         </p>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="productModel">Product / Model</Label>
-        <Input
-          id="productModel"
-          name="productModel"
-          placeholder="e.g. Odyssey"
-          defaultValue={defaults?.productModel ?? ""}
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="productModel">Product / Model</Label>
+          <Input
+            id="productModel"
+            name="productModel"
+            placeholder="e.g. Odyssey"
+            defaultValue={defaults?.productModel ?? ""}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="dimensions">Dimensions</Label>
+          <Input
+            id="dimensions"
+            name="dimensions"
+            placeholder={'e.g. 91" x 91" x 36"'}
+            defaultValue={defaults?.dimensions ?? ""}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

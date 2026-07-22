@@ -68,6 +68,7 @@ export const quoteSchema = z.object({
   description: z.string().trim().optional(),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
   productModel: z.string().trim().optional(),
+  dimensions: z.string().trim().optional(),
   shellColor: z.preprocess(emptyToUndefined, z.enum(SHELL_COLORS).optional()),
   cabinetColor: z.preprocess(emptyToUndefined, z.enum(CABINET_COLORS).optional()),
   voltage: z.preprocess(emptyToUndefined, z.enum(VOLTAGES).optional()),
