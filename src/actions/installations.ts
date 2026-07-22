@@ -10,6 +10,8 @@ import {
   shippedTemplate,
   receivedAtShopTemplate,
   notifyDariusTemplate,
+  inHouseDeliveryTaskText,
+  decideDeliveryMethodTaskText,
   deliveredTemplate,
   completeTemplate,
   renderForTask,
@@ -17,8 +19,13 @@ import {
 import {
   INSTALLATION_STAGES,
   INSTALLATION_STAGE_LABELS,
+  DELIVERY_METHODS,
+  DELIVERY_METHOD_LABELS,
 } from "@/lib/validation/installation";
-import type { InstallationStage } from "@/generated/prisma/enums";
+import type {
+  InstallationStage,
+  DeliveryMethod,
+} from "@/generated/prisma/enums";
 
 const ACCESSORY_ITEMS = [
   "SpaGuard chemical kit",
@@ -83,7 +90,9 @@ export async function updateInstallationStage(
         assigneeId: session.user.id,
         authorId: session.user.id,
         title: `Send "Arrived at Shop" email — ${nameSuffix}`,
-        description: renderForTask(receivedAtShopTemplate(contact)),
+        description: renderForTask(
+          receivedAtShopTemplate(contact, existing.deliveryMethod),
+        ),
       });
       await createAutoTask({
         contactId: contact.id,
@@ -94,13 +103,31 @@ export async function updateInstallationStage(
       });
       break;
     case "READY_FOR_DELIVERY":
-      await createAutoTask({
-        contactId: contact.id,
-        assigneeId: session.user.id,
-        authorId: session.user.id,
-        title: `Email Darius to coordinate delivery — ${nameSuffix}`,
-        description: renderForTask(notifyDariusTemplate(contact, quote)),
-      });
+      if (existing.deliveryMethod === "HOT_TUB_TAXI") {
+        await createAutoTask({
+          contactId: contact.id,
+          assigneeId: session.user.id,
+          authorId: session.user.id,
+          title: `Email Darius to coordinate delivery — ${nameSuffix}`,
+          description: renderForTask(notifyDariusTemplate(contact, quote)),
+        });
+      } else if (existing.deliveryMethod === "SPA_HAUS_TEAM") {
+        await createAutoTask({
+          contactId: contact.id,
+          assigneeId: session.user.id,
+          authorId: session.user.id,
+          title: `Schedule Spa Haus team delivery — ${nameSuffix}`,
+          description: inHouseDeliveryTaskText(contact, quote),
+        });
+      } else {
+        await createAutoTask({
+          contactId: contact.id,
+          assigneeId: session.user.id,
+          authorId: session.user.id,
+          title: `Decide delivery method & schedule — ${nameSuffix}`,
+          description: decideDeliveryMethodTaskText(contact),
+        });
+      }
       break;
     case "DELIVERED":
       await createAutoTask({
@@ -126,6 +153,50 @@ export async function updateInstallationStage(
 
   revalidatePath(`/contacts/${existing.contactId}`);
   revalidatePath(`/installations/${installationId}`);
+}
+
+export async function updateInstallationDelivery(
+  installationId: string,
+  formData: FormData,
+) {
+  const session = await auth();
+  if (!session?.user || !can(session.user, "installation:write")) {
+    throw new Error("Unauthorized");
+  }
+
+  const existing = await db.installation.findUnique({
+    where: { id: installationId },
+  });
+  if (!existing) throw new Error("Installation not found");
+
+  const raw = formData.get("deliveryMethod");
+  const deliveryMethod =
+    typeof raw === "string" &&
+    DELIVERY_METHODS.includes(raw as (typeof DELIVERY_METHODS)[number])
+      ? (raw as DeliveryMethod)
+      : null;
+
+  await db.installation.update({
+    where: { id: installationId },
+    data: {
+      deliveryMethod,
+      deliveryNotes: textOrNull(formData.get("deliveryNotes")),
+    },
+  });
+
+  if (deliveryMethod !== existing.deliveryMethod) {
+    await logActivity({
+      contactId: existing.contactId,
+      authorId: session.user.id,
+      type: "STATUS_CHANGE",
+      body: deliveryMethod
+        ? `Delivery method set to ${DELIVERY_METHOD_LABELS[deliveryMethod]}.`
+        : "Delivery method cleared — to be decided.",
+    });
+  }
+
+  revalidatePath(`/installations/${installationId}`);
+  revalidatePath(`/contacts/${existing.contactId}`);
 }
 
 export async function updateInstallationPrep(

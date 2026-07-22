@@ -2,6 +2,22 @@ import { z } from "zod";
 
 const emptyToUndefined = (val: unknown) => (val === "" ? undefined : val);
 
+export const PRODUCT_TYPES = [
+  "HOT_TUB",
+  "SWIM_SPA",
+  "SAUNA",
+  "COLD_PLUNGE",
+  "MASSAGE_CHAIR",
+] as const;
+
+export const PRODUCT_TYPE_LABELS: Record<(typeof PRODUCT_TYPES)[number], string> = {
+  HOT_TUB: "Hot Tub",
+  SWIM_SPA: "Swim Spa",
+  SAUNA: "Sauna",
+  COLD_PLUNGE: "Cold Plunge",
+  MASSAGE_CHAIR: "Massage Chair",
+};
+
 export const SHELL_COLORS = [
   "SILVER_MARBLE",
   "STORM_CLOUDS",
@@ -67,6 +83,7 @@ export const quoteSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   description: z.string().trim().optional(),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
+  productType: z.preprocess(emptyToUndefined, z.enum(PRODUCT_TYPES).optional()),
   productModel: z.string().trim().optional(),
   dimensions: z.string().trim().optional(),
   shellColor: z.preprocess(emptyToUndefined, z.enum(SHELL_COLORS).optional()),

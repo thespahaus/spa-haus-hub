@@ -27,6 +27,7 @@ export async function createQuote(formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description") ?? "",
     amount: formData.get("amount"),
+    productType: formData.get("productType") ?? "",
     productModel: formData.get("productModel") ?? "",
     dimensions: formData.get("dimensions") ?? "",
     shellColor: formData.get("shellColor") ?? "",
@@ -46,6 +47,7 @@ export async function createQuote(formData: FormData) {
       title: parsed.data.title,
       description: parsed.data.description || null,
       amount: parsed.data.amount,
+      productType: parsed.data.productType ?? null,
       productModel: parsed.data.productModel || null,
       dimensions: parsed.data.dimensions || null,
       shellColor: parsed.data.shellColor,
@@ -109,8 +111,24 @@ export async function updateQuoteStatus(quoteId: string, status: string) {
       where: { quoteId },
     });
     if (!existingInstallation) {
+      // Delivery rules: swim spas always go to Hot Tub Taxi; saunas, cold
+      // plunges, and massage chairs are always delivered in-house; hot tubs
+      // (and quotes with no product type) are Matt's case-by-case call.
+      const defaultDeliveryMethod =
+        existing.productType === "SWIM_SPA"
+          ? ("HOT_TUB_TAXI" as const)
+          : existing.productType === "SAUNA" ||
+              existing.productType === "COLD_PLUNGE" ||
+              existing.productType === "MASSAGE_CHAIR"
+            ? ("SPA_HAUS_TEAM" as const)
+            : null;
+
       const installation = await db.installation.create({
-        data: { quoteId, contactId: existing.contactId },
+        data: {
+          quoteId,
+          contactId: existing.contactId,
+          deliveryMethod: defaultDeliveryMethod,
+        },
       });
       await logActivity({
         contactId: existing.contactId,
@@ -161,6 +179,7 @@ export async function updateQuote(quoteId: string, formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description") ?? "",
     amount: formData.get("amount"),
+    productType: formData.get("productType") ?? "",
     productModel: formData.get("productModel") ?? "",
     dimensions: formData.get("dimensions") ?? "",
     shellColor: formData.get("shellColor") ?? "",
@@ -179,6 +198,7 @@ export async function updateQuote(quoteId: string, formData: FormData) {
       title: parsed.data.title,
       description: parsed.data.description || null,
       amount: parsed.data.amount,
+      productType: parsed.data.productType ?? null,
       productModel: parsed.data.productModel || null,
       dimensions: parsed.data.dimensions || null,
       shellColor: parsed.data.shellColor,

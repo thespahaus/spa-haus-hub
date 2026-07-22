@@ -10,6 +10,7 @@ import { TaskStatusSelect } from "@/components/tasks/task-status-select";
 import { InstallationStageSelect } from "@/components/installation/installation-stage-select";
 import { formatDueDate } from "@/lib/utils";
 import { SHELL_COLOR_LABELS, CABINET_COLOR_LABELS } from "@/lib/validation/quote";
+import { DELIVERY_METHOD_LABELS } from "@/lib/validation/installation";
 
 const CURRENCY = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -194,6 +195,14 @@ export default async function ContactDetailPage(props: {
                   installationId={inst.id}
                   stage={inst.stage}
                 />
+                <div className="text-xs text-muted-foreground">
+                  Delivery:{" "}
+                  {inst.deliveryMethod
+                    ? DELIVERY_METHOD_LABELS[
+                        inst.deliveryMethod as keyof typeof DELIVERY_METHOD_LABELS
+                      ]
+                    : "To be decided"}
+                </div>
                 <Link
                   href={`/installations/${inst.id}`}
                   className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit"

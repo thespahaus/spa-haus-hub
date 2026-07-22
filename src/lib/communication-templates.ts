@@ -47,14 +47,24 @@ ${SIGNOFF}`,
   };
 }
 
-export function receivedAtShopTemplate(contact: TemplateContact) {
+export function receivedAtShopTemplate(
+  contact: TemplateContact,
+  deliveryMethod: "SPA_HAUS_TEAM" | "HOT_TUB_TAXI" | null,
+) {
+  const coordinatorLine =
+    deliveryMethod === "HOT_TUB_TAXI"
+      ? "You can expect to hear from our delivery coordinator, Hot Tub Taxi, to set up a delivery time that works for you."
+      : deliveryMethod === "SPA_HAUS_TEAM"
+        ? "Our delivery team will be reaching out to set up a delivery time that works for you."
+        : "We'll be reaching out shortly to set up a delivery time that works for you.";
+
   return {
     subject: "Your Spa Has Arrived at Our Shop!",
     body: `Hi ${contact.firstName},
 
 Your spa has arrived at our shop and everything looks great! We're coordinating with our delivery team now to get it scheduled and to your home as soon as possible.
 
-You can expect to hear from our delivery coordinator, Hot Tub Taxi, to set up a delivery time that works for you. If you have any questions or a preferred delivery window, please don't hesitate to let us know and we'll do our best to accommodate.
+${coordinatorLine} If you have any questions or a preferred delivery window, please don't hesitate to let us know and we'll do our best to accommodate.
 
 We're almost there — thank you for your patience throughout this process!
 
@@ -87,6 +97,38 @@ Thank you, Darius!
 
 ${SIGNOFF}`,
   };
+}
+
+// Internal task text (not a customer email) for deliveries the Spa Haus
+// team handles themselves instead of handing off to Hot Tub Taxi.
+export function inHouseDeliveryTaskText(
+  contact: TemplateContact,
+  quote: TemplateQuote,
+) {
+  return `Coordinate an in-house delivery with the Spa Haus team (Matt, Mark, Dan) and schedule a date with the customer.
+
+Customer: ${contact.firstName} ${contact.lastName}
+Address: ${contact.address ?? "[fill in]"}
+Phone: ${contact.phone ?? "[fill in]"}
+Email: ${contact.email ?? "[fill in]"}
+
+Model: ${quote.productModel ?? "[fill in]"}
+Dimensions: ${quote.dimensions ?? "[fill in]"}
+
+- Confirm crew availability (Matt, Mark, Dan)
+- Schedule delivery date/time with the customer
+- Review site access notes before heading out`;
+}
+
+// Internal task text for hot tubs where Matt hasn't decided yet who delivers.
+export function decideDeliveryMethodTaskText(contact: TemplateContact) {
+  return `Decide who delivers for ${contact.firstName} ${contact.lastName}: Spa Haus team (Matt, Mark, Dan) or Hot Tub Taxi (Darius).
+
+Consider terrain, distance, difficulty, and technicality of the site.
+
+Set the delivery method on the installation page — then either coordinate the in-house delivery or email Darius to hand it off.
+
+Customer address: ${contact.address ?? "[fill in]"}`;
 }
 
 export function deliveredTemplate(contact: TemplateContact) {

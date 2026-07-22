@@ -80,6 +80,22 @@ enum PaymentMethod {
   WELLS_FARGO_FINANCING
 }
 
+enum ProductType {
+  HOT_TUB
+  SWIM_SPA
+  SAUNA
+  COLD_PLUNGE
+  MASSAGE_CHAIR
+}
+
+// Who physically delivers. Swim spas are always HOT_TUB_TAXI; saunas, cold
+// plunges, and massage chairs are always SPA_HAUS_TEAM; hot tubs are decided
+// case-by-case by Matt (terrain, distance, difficulty), so it starts null.
+enum DeliveryMethod {
+  SPA_HAUS_TEAM
+  HOT_TUB_TAXI
+}
+
 enum InstallationStage {
   ORDERED
   SHIPPED
@@ -147,6 +163,7 @@ model Quote {
   decidedAt   DateTime?
 
   // Product configuration, from the real Sales Agreement (sent via PandaDoc today)
+  productType   ProductType?
   productModel  String?
   dimensions    String?
   shellColor    ShellColor?
@@ -211,6 +228,12 @@ model Installation {
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   stage InstallationStage @default(ORDERED)
+
+  // Defaulted from the quote's product type at creation (swim spa → Hot Tub
+  // Taxi, sauna/cold plunge/massage chair → Spa Haus team); hot tubs start
+  // null until Matt decides. deliveryNotes records the reasoning/logistics.
+  deliveryMethod DeliveryMethod?
+  deliveryNotes  String?
 
   scheduledDeliveryDate DateTime?
   deliveredAt           DateTime?

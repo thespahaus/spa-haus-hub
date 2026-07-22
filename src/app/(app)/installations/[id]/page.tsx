@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { InstallationStageSelect } from "@/components/installation/installation-stage-select";
 import { InstallationChecklistForm } from "@/components/installation/installation-checklist-form";
 import { InstallationPrepForm } from "@/components/installation/installation-prep-form";
+import { InstallationDeliveryForm } from "@/components/installation/installation-delivery-form";
 
 export default async function InstallationPage(props: {
   params: Promise<{ id: string }>;
@@ -39,6 +40,12 @@ export default async function InstallationPage(props: {
           />
         </div>
       </div>
+
+      <InstallationDeliveryForm
+        installationId={installation.id}
+        deliveryMethod={installation.deliveryMethod}
+        deliveryNotes={installation.deliveryNotes}
+      />
 
       <InstallationPrepForm
         installationId={installation.id}

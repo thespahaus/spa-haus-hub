@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  PRODUCT_TYPES,
+  PRODUCT_TYPE_LABELS,
   SHELL_COLORS,
   SHELL_COLOR_LABELS,
   CABINET_COLORS,
@@ -30,6 +32,7 @@ type Defaults = {
   title?: string;
   description?: string | null;
   amount?: number | string;
+  productType?: string | null;
   productModel?: string | null;
   dimensions?: string | null;
   shellColor?: string | null;
@@ -52,6 +55,7 @@ export function QuoteForm({
   defaults?: Defaults;
   submitLabel: string;
 }) {
+  const [productType, setProductType] = useState(defaults?.productType ?? "");
   const [voltage, setVoltage] = useState(defaults?.voltage ?? "");
   const [paymentMethod, setPaymentMethod] = useState(
     defaults?.paymentMethod ?? "",
@@ -127,6 +131,49 @@ export function QuoteForm({
         <p className="text-xs text-muted-foreground">
           Matches the fields on the Sales Agreement.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="productType">Product Type</Label>
+        <Select
+          name="productType"
+          value={productType}
+          onValueChange={(v) => setProductType(v ?? "")}
+        >
+          <SelectTrigger id="productType" className="w-full">
+            <SelectValue placeholder="Select">
+              {(value: string) =>
+                PRODUCT_TYPE_LABELS[
+                  value as keyof typeof PRODUCT_TYPE_LABELS
+                ] ?? value
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {PRODUCT_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {PRODUCT_TYPE_LABELS[t]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {productType === "HOT_TUB" && (
+          <p className="text-xs text-muted-foreground">
+            Delivery decided case-by-case — Spa Haus team or Hot Tub Taxi.
+          </p>
+        )}
+        {productType === "SWIM_SPA" && (
+          <p className="text-xs text-muted-foreground">
+            Delivered by Hot Tub Taxi.
+          </p>
+        )}
+        {(productType === "SAUNA" ||
+          productType === "COLD_PLUNGE" ||
+          productType === "MASSAGE_CHAIR") && (
+          <p className="text-xs text-muted-foreground">
+            Delivered by the Spa Haus team.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

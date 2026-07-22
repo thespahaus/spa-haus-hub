@@ -23,6 +23,16 @@ export const INSTALLATION_STAGE_LABELS: Record<
   COMPLETE: "Complete",
 };
 
+export const DELIVERY_METHODS = ["SPA_HAUS_TEAM", "HOT_TUB_TAXI"] as const;
+
+export const DELIVERY_METHOD_LABELS: Record<
+  (typeof DELIVERY_METHODS)[number],
+  string
+> = {
+  SPA_HAUS_TEAM: "Spa Haus Team (Matt, Mark, Dan)",
+  HOT_TUB_TAXI: "Hot Tub Taxi (Darius)",
+};
+
 export interface InstallationChecklist {
   steps: { installed: boolean; secure: boolean };
   cover: { fits: boolean; skirtAttached: boolean };
