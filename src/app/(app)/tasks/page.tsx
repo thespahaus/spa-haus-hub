@@ -80,7 +80,19 @@ export default async function TasksPage(props: {
                 (t.status === "OPEN" || t.status === "IN_PROGRESS");
               return (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.title}</TableCell>
+                  <TableCell className="font-medium align-top">
+                    {t.title}
+                    {t.description && (
+                      <details className="mt-1 font-normal">
+                        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                          Show draft
+                        </summary>
+                        <pre className="mt-1 max-w-md whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs">
+                          {t.description}
+                        </pre>
+                      </details>
+                    )}
+                  </TableCell>
                   <TableCell
                     className={overdue ? "font-medium text-destructive" : ""}
                   >

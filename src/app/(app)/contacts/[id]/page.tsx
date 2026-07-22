@@ -162,6 +162,16 @@ export default async function ContactDetailPage(props: {
                     {t.dueDate ? formatDueDate(t.dueDate) : "No due date"}{" "}
                     · {t.assignee.name}
                   </div>
+                  {t.description && (
+                    <details>
+                      <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                        Show draft
+                      </summary>
+                      <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs">
+                        {t.description}
+                      </pre>
+                    </details>
+                  )}
                   <TaskStatusSelect taskId={t.id} status={t.status} />
                 </div>
               ))
