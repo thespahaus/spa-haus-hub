@@ -25,6 +25,12 @@ export async function createQuote(formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description") ?? "",
     amount: formData.get("amount"),
+    productModel: formData.get("productModel") ?? "",
+    shellColor: formData.get("shellColor") ?? "",
+    cabinetColor: formData.get("cabinetColor") ?? "",
+    voltage: formData.get("voltage") ?? "",
+    sanitizer: formData.get("sanitizer") ?? "",
+    paymentMethod: formData.get("paymentMethod") ?? "",
   });
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid quote");
@@ -37,6 +43,12 @@ export async function createQuote(formData: FormData) {
       title: parsed.data.title,
       description: parsed.data.description || null,
       amount: parsed.data.amount,
+      productModel: parsed.data.productModel || null,
+      shellColor: parsed.data.shellColor,
+      cabinetColor: parsed.data.cabinetColor,
+      voltage: parsed.data.voltage,
+      sanitizer: parsed.data.sanitizer,
+      paymentMethod: parsed.data.paymentMethod,
     },
   });
 
@@ -106,6 +118,12 @@ export async function updateQuote(quoteId: string, formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description") ?? "",
     amount: formData.get("amount"),
+    productModel: formData.get("productModel") ?? "",
+    shellColor: formData.get("shellColor") ?? "",
+    cabinetColor: formData.get("cabinetColor") ?? "",
+    voltage: formData.get("voltage") ?? "",
+    sanitizer: formData.get("sanitizer") ?? "",
+    paymentMethod: formData.get("paymentMethod") ?? "",
   });
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid quote");
@@ -117,6 +135,12 @@ export async function updateQuote(quoteId: string, formData: FormData) {
       title: parsed.data.title,
       description: parsed.data.description || null,
       amount: parsed.data.amount,
+      productModel: parsed.data.productModel || null,
+      shellColor: parsed.data.shellColor,
+      cabinetColor: parsed.data.cabinetColor,
+      voltage: parsed.data.voltage,
+      sanitizer: parsed.data.sanitizer,
+      paymentMethod: parsed.data.paymentMethod,
     },
   });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,11 +12,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  SHELL_COLORS,
+  SHELL_COLOR_LABELS,
+  CABINET_COLORS,
+  CABINET_COLOR_LABELS,
+  VOLTAGES,
+  VOLTAGE_LABELS,
+  SANITIZERS,
+  SANITIZER_LABELS,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHOD_NOTES,
+} from "@/lib/validation/quote";
 
 type Defaults = {
   title?: string;
   description?: string | null;
   amount?: number | string;
+  productModel?: string | null;
+  shellColor?: string | null;
+  cabinetColor?: string | null;
+  voltage?: string | null;
+  sanitizer?: string | null;
+  paymentMethod?: string | null;
 };
 
 export function QuoteForm({
@@ -31,6 +51,11 @@ export function QuoteForm({
   defaults?: Defaults;
   submitLabel: string;
 }) {
+  const [voltage, setVoltage] = useState(defaults?.voltage ?? "");
+  const [paymentMethod, setPaymentMethod] = useState(
+    defaults?.paymentMethod ?? "",
+  );
+
   return (
     <form action={action} className="flex flex-col gap-4 max-w-lg">
       {fixedContact ? (
@@ -91,10 +116,163 @@ export function QuoteForm({
         <Textarea
           id="description"
           name="description"
-          placeholder="Model, color, add-ons, install notes..."
+          placeholder="Add-ons, install notes..."
           defaultValue={defaults?.description ?? ""}
         />
       </div>
+
+      <div className="mt-2 border-t pt-4">
+        <h3 className="text-sm font-medium">Product Configuration</h3>
+        <p className="text-xs text-muted-foreground">
+          Matches the fields on the Sales Agreement.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="productModel">Product / Model</Label>
+        <Input
+          id="productModel"
+          name="productModel"
+          placeholder="e.g. Odyssey"
+          defaultValue={defaults?.productModel ?? ""}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="shellColor">Shell Color</Label>
+          <Select name="shellColor" defaultValue={defaults?.shellColor ?? ""}>
+            <SelectTrigger id="shellColor" className="w-full">
+              <SelectValue placeholder="Select">
+                {(value: string) =>
+                  SHELL_COLOR_LABELS[value as keyof typeof SHELL_COLOR_LABELS] ??
+                  value
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {SHELL_COLORS.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {SHELL_COLOR_LABELS[c]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cabinetColor">Cabinet Color</Label>
+          <Select
+            name="cabinetColor"
+            defaultValue={defaults?.cabinetColor ?? ""}
+          >
+            <SelectTrigger id="cabinetColor" className="w-full">
+              <SelectValue placeholder="Select">
+                {(value: string) =>
+                  CABINET_COLOR_LABELS[
+                    value as keyof typeof CABINET_COLOR_LABELS
+                  ] ?? value
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {CABINET_COLORS.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {CABINET_COLOR_LABELS[c]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="voltage">Voltage</Label>
+        <Select
+          name="voltage"
+          value={voltage}
+          onValueChange={(v) => setVoltage(v ?? "")}
+        >
+          <SelectTrigger id="voltage" className="w-full">
+            <SelectValue placeholder="Select">
+              {(value: string) =>
+                VOLTAGE_LABELS[value as keyof typeof VOLTAGE_LABELS] ?? value
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {VOLTAGES.map((v) => (
+              <SelectItem key={v} value={v}>
+                {VOLTAGE_LABELS[v]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {voltage === "V220_240" && (
+          <p className="text-xs text-muted-foreground">
+            220/240V requires a licensed, insured electrician.
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="sanitizer">Sanitizer</Label>
+        <Select name="sanitizer" defaultValue={defaults?.sanitizer ?? ""}>
+          <SelectTrigger id="sanitizer" className="w-full">
+            <SelectValue placeholder="Select">
+              {(value: string) =>
+                SANITIZER_LABELS[value as keyof typeof SANITIZER_LABELS] ??
+                value
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {SANITIZERS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {SANITIZER_LABELS[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="paymentMethod">Payment Method</Label>
+        <Select
+          name="paymentMethod"
+          value={paymentMethod}
+          onValueChange={(v) => setPaymentMethod(v ?? "")}
+        >
+          <SelectTrigger id="paymentMethod" className="w-full">
+            <SelectValue placeholder="Select">
+              {(value: string) =>
+                PAYMENT_METHOD_LABELS[
+                  value as keyof typeof PAYMENT_METHOD_LABELS
+                ] ?? value
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {PAYMENT_METHODS.map((p) => (
+              <SelectItem key={p} value={p}>
+                {PAYMENT_METHOD_LABELS[p]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {paymentMethod &&
+          PAYMENT_METHOD_NOTES[
+            paymentMethod as keyof typeof PAYMENT_METHOD_NOTES
+          ] && (
+            <p className="text-xs text-muted-foreground">
+              {
+                PAYMENT_METHOD_NOTES[
+                  paymentMethod as keyof typeof PAYMENT_METHOD_NOTES
+                ]
+              }
+            </p>
+          )}
+      </div>
+
       <Button type="submit" className="mt-2 w-fit">
         {submitLabel}
       </Button>

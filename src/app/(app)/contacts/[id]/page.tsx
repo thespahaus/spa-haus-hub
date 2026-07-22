@@ -8,6 +8,7 @@ import { ActivityTimeline } from "@/components/contacts/activity-timeline";
 import { QuoteStatusSelect } from "@/components/quotes/quote-status-select";
 import { TaskStatusSelect } from "@/components/tasks/task-status-select";
 import { formatDueDate } from "@/lib/utils";
+import { SHELL_COLOR_LABELS, CABINET_COLOR_LABELS } from "@/lib/validation/quote";
 
 const CURRENCY = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -102,20 +103,36 @@ export default async function ContactDetailPage(props: {
             {contact.quotes.length === 0 ? (
               <p className="text-sm text-muted-foreground">No quotes yet.</p>
             ) : (
-              contact.quotes.map((q) => (
-                <div key={q.id} className="flex flex-col gap-1 text-sm">
-                  <Link
-                    href={`/quotes/${q.id}/edit`}
-                    className="font-medium hover:underline"
-                  >
-                    {q.title}
-                  </Link>
-                  <div className="text-xs text-muted-foreground">
-                    {CURRENCY.format(Number(q.amount))}
+              contact.quotes.map((q) => {
+                const configParts = [
+                  q.productModel,
+                  q.shellColor
+                    ? SHELL_COLOR_LABELS[
+                        q.shellColor as keyof typeof SHELL_COLOR_LABELS
+                      ]
+                    : null,
+                  q.cabinetColor
+                    ? CABINET_COLOR_LABELS[
+                        q.cabinetColor as keyof typeof CABINET_COLOR_LABELS
+                      ]
+                    : null,
+                ].filter(Boolean);
+                return (
+                  <div key={q.id} className="flex flex-col gap-1 text-sm">
+                    <Link
+                      href={`/quotes/${q.id}/edit`}
+                      className="font-medium hover:underline"
+                    >
+                      {q.title}
+                    </Link>
+                    <div className="text-xs text-muted-foreground">
+                      {CURRENCY.format(Number(q.amount))}
+                      {configParts.length > 0 && ` · ${configParts.join(" / ")}`}
+                    </div>
+                    <QuoteStatusSelect quoteId={q.id} status={q.status} />
                   </div>
-                  <QuoteStatusSelect quoteId={q.id} status={q.status} />
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>

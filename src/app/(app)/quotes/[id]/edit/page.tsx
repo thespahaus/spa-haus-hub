@@ -26,6 +26,12 @@ export default async function EditQuotePage(props: {
           title: quote.title,
           description: quote.description,
           amount: quote.amount.toString(),
+          productModel: quote.productModel,
+          shellColor: quote.shellColor,
+          cabinetColor: quote.cabinetColor,
+          voltage: quote.voltage,
+          sanitizer: quote.sanitizer,
+          paymentMethod: quote.paymentMethod,
         }}
         submitLabel="Save Changes"
       />
