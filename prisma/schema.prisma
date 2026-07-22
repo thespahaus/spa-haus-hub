@@ -81,13 +81,14 @@ enum PaymentMethod {
 }
 
 enum InstallationStage {
-  ORDER_PRODUCTION
-  SITE_PREP
-  ELECTRICAL_PREP
-  DELIVERY
-  FILL_POWER_ON
+  ORDERED
+  SHIPPED
+  RECEIVED_AT_SHOP
+  READY_FOR_DELIVERY
+  DELIVERED
   INSTALL_VISIT
   STARTUP_CALL
+  COMPLETE
 }
 
 model User {
@@ -147,6 +148,7 @@ model Quote {
 
   // Product configuration, from the real Sales Agreement (sent via PandaDoc today)
   productModel  String?
+  dimensions    String?
   shellColor    ShellColor?
   cabinetColor  CabinetColor?
   voltage       Voltage?
@@ -208,10 +210,17 @@ model Installation {
   contactId String
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  stage InstallationStage @default(ORDER_PRODUCTION)
+  stage InstallationStage @default(ORDERED)
 
   scheduledDeliveryDate DateTime?
   deliveredAt           DateTime?
+
+  // Site & electrical prep check-in — a single parallel confirmation point
+  // (concrete/decking/electrical contractor lined up with a date), not a
+  // sequential stage since it happens alongside production/shipping.
+  prepConfirmed   Boolean   @default(false)
+  prepConfirmedAt DateTime?
+  prepNotes       String?
 
   // Install-visit header, filled in on-site during the after-sales visit
   visitDate     DateTime?
