@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 import { can } from "@/lib/permissions";
+import { createAutoTask } from "@/lib/auto-task";
+import { orderedTemplate, prepCheckInTemplate, renderForTask } from "@/lib/communication-templates";
 import { quoteSchema, QUOTE_STATUSES, QUOTE_STATUS_LABELS } from "@/lib/validation/quote";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
@@ -115,6 +117,27 @@ export async function updateQuoteStatus(quoteId: string, status: string) {
         body: "Installation tracking started.",
       });
       revalidatePath(`/installations/${installation.id}`);
+
+      const contact = await db.contact.findUnique({
+        where: { id: existing.contactId },
+      });
+      if (contact) {
+        await createAutoTask({
+          contactId: contact.id,
+          assigneeId: session.user.id,
+          authorId: session.user.id,
+          title: `Send "Ordered / In Production" email — ${contact.firstName} ${contact.lastName}`,
+          description: renderForTask(orderedTemplate(contact)),
+        });
+        await createAutoTask({
+          contactId: contact.id,
+          assigneeId: session.user.id,
+          authorId: session.user.id,
+          title: `Check in on site/electrical prep — ${contact.firstName} ${contact.lastName}`,
+          description: renderForTask(prepCheckInTemplate(contact)),
+          dueInDays: 3,
+        });
+      }
     }
   }
 

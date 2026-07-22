@@ -5,11 +5,28 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 import { can } from "@/lib/permissions";
+import { createAutoTask } from "@/lib/auto-task";
+import {
+  shippedTemplate,
+  receivedAtShopTemplate,
+  notifyDariusTemplate,
+  deliveredTemplate,
+  completeTemplate,
+  renderForTask,
+} from "@/lib/communication-templates";
 import {
   INSTALLATION_STAGES,
   INSTALLATION_STAGE_LABELS,
 } from "@/lib/validation/installation";
 import type { InstallationStage } from "@/generated/prisma/enums";
+
+const ACCESSORY_ITEMS = [
+  "SpaGuard chemical kit",
+  "Cover lifter box",
+  "Steps box",
+  "Cover clips / hardware",
+  "Other accessories",
+];
 
 export async function updateInstallationStage(
   installationId: string,
@@ -30,6 +47,7 @@ export async function updateInstallationStage(
 
   const existing = await db.installation.findUnique({
     where: { id: installationId },
+    include: { contact: true, quote: true },
   });
   if (!existing) throw new Error("Installation not found");
   if (existing.stage === stage) return;
@@ -45,6 +63,66 @@ export async function updateInstallationStage(
     type: "STATUS_CHANGE",
     body: `Installation moved from ${INSTALLATION_STAGE_LABELS[existing.stage as keyof typeof INSTALLATION_STAGE_LABELS]} to ${INSTALLATION_STAGE_LABELS[stage as keyof typeof INSTALLATION_STAGE_LABELS]}.`,
   });
+
+  const { contact, quote } = existing;
+  const nameSuffix = `${contact.firstName} ${contact.lastName}`;
+
+  switch (stage) {
+    case "SHIPPED":
+      await createAutoTask({
+        contactId: contact.id,
+        assigneeId: session.user.id,
+        authorId: session.user.id,
+        title: `Send "Shipped" email — ${nameSuffix}`,
+        description: renderForTask(shippedTemplate(contact)),
+      });
+      break;
+    case "RECEIVED_AT_SHOP":
+      await createAutoTask({
+        contactId: contact.id,
+        assigneeId: session.user.id,
+        authorId: session.user.id,
+        title: `Send "Arrived at Shop" email — ${nameSuffix}`,
+        description: renderForTask(receivedAtShopTemplate(contact)),
+      });
+      await createAutoTask({
+        contactId: contact.id,
+        assigneeId: session.user.id,
+        authorId: session.user.id,
+        title: `Gather accessories for delivery — ${nameSuffix}`,
+        description: `Stage and confirm the following are ready before scheduling delivery:\n\n${ACCESSORY_ITEMS.map((i) => `- ${i}`).join("\n")}`,
+      });
+      break;
+    case "READY_FOR_DELIVERY":
+      await createAutoTask({
+        contactId: contact.id,
+        assigneeId: session.user.id,
+        authorId: session.user.id,
+        title: `Email Darius to coordinate delivery — ${nameSuffix}`,
+        description: renderForTask(notifyDariusTemplate(contact, quote)),
+      });
+      break;
+    case "DELIVERED":
+      await createAutoTask({
+        contactId: contact.id,
+        assigneeId: session.user.id,
+        authorId: session.user.id,
+        title: `Send "Delivered" welcome email — ${nameSuffix}`,
+        description: renderForTask(deliveredTemplate(contact)),
+      });
+      break;
+    case "COMPLETE":
+      await createAutoTask({
+        contactId: contact.id,
+        assigneeId: session.user.id,
+        authorId: session.user.id,
+        title: `Send permanent reference email — ${nameSuffix}`,
+        description: renderForTask(completeTemplate(contact)),
+      });
+      break;
+    default:
+      break;
+  }
 
   revalidatePath(`/contacts/${existing.contactId}`);
   revalidatePath(`/installations/${installationId}`);

@@ -1,24 +1,26 @@
 export const INSTALLATION_STAGES = [
-  "ORDER_PRODUCTION",
-  "SITE_PREP",
-  "ELECTRICAL_PREP",
-  "DELIVERY",
-  "FILL_POWER_ON",
+  "ORDERED",
+  "SHIPPED",
+  "RECEIVED_AT_SHOP",
+  "READY_FOR_DELIVERY",
+  "DELIVERED",
   "INSTALL_VISIT",
   "STARTUP_CALL",
+  "COMPLETE",
 ] as const;
 
 export const INSTALLATION_STAGE_LABELS: Record<
   (typeof INSTALLATION_STAGES)[number],
   string
 > = {
-  ORDER_PRODUCTION: "Order & Production",
-  SITE_PREP: "Site Prep",
-  ELECTRICAL_PREP: "Electrical Prep",
-  DELIVERY: "Delivery",
-  FILL_POWER_ON: "Fill & Power On",
+  ORDERED: "Ordered / In Production",
+  SHIPPED: "Shipped",
+  RECEIVED_AT_SHOP: "Received at Shop",
+  READY_FOR_DELIVERY: "Ready for Delivery",
+  DELIVERED: "Delivered",
   INSTALL_VISIT: "After-Sales Install Visit",
   STARTUP_CALL: "Startup Call",
+  COMPLETE: "Complete",
 };
 
 export interface InstallationChecklist {
