@@ -68,8 +68,35 @@ async function discoverAccounts(): Promise<{
       attemptErrors.push(`${candidateManager}: ${message}`);
     }
   }
+
+  // No manager-with-children found. Some accounts (like this one, apparently)
+  // hold campaigns directly even while flagged manager:true in customer_client.
+  // Fall back to just checking whether each candidate has campaigns at all.
+  for (const candidate of accessible) {
+    try {
+      const rows = await gaqlSearch(
+        candidate,
+        `SELECT campaign.id FROM campaign LIMIT 1`,
+        candidate,
+      );
+      console.log(
+        `Google Ads discovery fallback: customer ${candidate} campaign check returned ${rows.length} row(s)`,
+      );
+      const result = { managerCustomerId: candidate, clientCustomerId: candidate };
+      await db.googleAdsConnection.update({
+        where: { id: connection.id },
+        data: result,
+      });
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Google Ads discovery fallback failed for customer ${candidate}:`, message);
+      attemptErrors.push(`${candidate} (campaign check): ${message}`);
+    }
+  }
+
   throw new Error(
-    `Couldn't find a client ad account under the connected login. Tried: [${accessible.join(", ")}]. Errors: ${attemptErrors.join(" | ") || "none — queries succeeded but returned no non-manager client accounts"}`,
+    `Couldn't find a client ad account under the connected login. Tried: [${accessible.join(", ")}]. Errors: ${attemptErrors.join(" | ")}`,
   );
 }
 
