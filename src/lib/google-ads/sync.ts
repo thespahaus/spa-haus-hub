@@ -174,14 +174,19 @@ export async function runGoogleAdsSync(): Promise<SyncResult> {
     campaignDays++;
   }
 
+  // call_view rejects segments.date (PROHIBITED_SEGMENT) — it exposes its own
+  // start_call_date_time instead, and only retains a limited recent window
+  // server-side. Pull all available rows and filter by date in code.
+  const callCutoff = new Date();
+  callCutoff.setDate(callCutoff.getDate() - CALL_LOOKBACK_DAYS);
+
   const callRows = await gaqlSearch(
     clientCustomerId,
     `SELECT call_view.resource_name, call_view.start_call_date_time,
             call_view.call_duration_seconds, call_view.caller_area_code,
             call_view.caller_country_code, call_view.type, call_view.call_status,
             campaign.name
-     FROM call_view
-     WHERE segments.date BETWEEN '${isoDate(CALL_LOOKBACK_DAYS)}' AND '${isoDate(0)}'`,
+     FROM call_view`,
     managerCustomerId,
   );
 
@@ -199,11 +204,14 @@ export async function runGoogleAdsSync(): Promise<SyncResult> {
     const campaign = row.campaign as { name?: string };
     if (!call?.resourceName) continue;
 
+    const startCallAt = call.startCallDateTime
+      ? new Date(call.startCallDateTime.replace(" ", "T"))
+      : null;
+    if (startCallAt && startCallAt < callCutoff) continue;
+
     const data = {
       resourceName: call.resourceName,
-      startCallAt: call.startCallDateTime
-        ? new Date(call.startCallDateTime.replace(" ", "T"))
-        : null,
+      startCallAt,
       durationSeconds: Number(call.callDurationSeconds ?? 0),
       callerAreaCode: call.callerAreaCode ?? null,
       callerCountryCode: call.callerCountryCode ?? null,
