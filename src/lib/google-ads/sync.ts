@@ -1,14 +1,24 @@
 import { db } from "@/lib/db";
 import { gaqlSearch, listAccessibleCustomers } from "@/lib/google-ads/client";
+import { accountWallClockToUtc } from "@/lib/google-ads/time";
 
-const CAMPAIGN_LOOKBACK_DAYS = 90;
-// call_view only retains roughly the trailing 30 days server-side.
-const CALL_LOOKBACK_DAYS = 30;
+// Pull campaign history year-by-year back to this floor. The account started
+// spending in early 2024; 2020 is a safe floor (empty earlier years just
+// return no rows). Year-chunking avoids any single huge date-range query.
+const HISTORY_START_YEAR = 2020;
+// Bulk-insert new rows in chunks this size (one INSERT per chunk).
+const INSERT_CHUNK = 1000;
 
 function isoDate(daysAgo: number): string {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
   return d.toISOString().slice(0, 10);
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 async function discoverAccounts(): Promise<{
@@ -125,61 +135,83 @@ export type SyncResult = {
   clientCustomerId: string;
 };
 
+type CampaignDayData = {
+  date: Date;
+  campaignId: string;
+  campaignName: string;
+  campaignStatus: string;
+  costMicros: bigint;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+  conversionsValue: number;
+  allConversions: number;
+};
+
 export async function runGoogleAdsSync(): Promise<SyncResult> {
   const { managerCustomerId, clientCustomerId } = await discoverAccounts();
 
-  const campaignRows = await gaqlSearch(
-    clientCustomerId,
-    `SELECT segments.date, campaign.id, campaign.name, campaign.status,
-            metrics.cost_micros, metrics.clicks, metrics.impressions,
-            metrics.conversions, metrics.conversions_value, metrics.all_conversions
-     FROM campaign
-     WHERE segments.date BETWEEN '${isoDate(CAMPAIGN_LOOKBACK_DAYS)}' AND '${isoDate(0)}'`,
-    managerCustomerId,
-  );
+  // Pull campaign performance year-by-year, all the way back to the floor, so
+  // a single query never spans a huge range. Empty years just return nothing.
+  const currentYear = new Date().getUTCFullYear();
+  const seen = new Set<string>();
+  const campaignData: CampaignDayData[] = [];
 
-  let campaignDays = 0;
-  for (const row of campaignRows) {
-    const campaign = row.campaign as { id?: string; name?: string; status?: string };
-    const segments = row.segments as { date?: string };
-    const metrics = row.metrics as {
-      costMicros?: string;
-      clicks?: string;
-      impressions?: string;
-      conversions?: number;
-      conversionsValue?: number;
-      allConversions?: number;
-    };
-    if (!campaign?.id || !segments?.date) continue;
-
-    const data = {
-      date: new Date(segments.date),
-      campaignId: String(campaign.id),
-      campaignName: campaign.name ?? "",
-      campaignStatus: campaign.status ?? "",
-      costMicros: BigInt(metrics.costMicros ?? "0"),
-      clicks: Number(metrics.clicks ?? 0),
-      impressions: Number(metrics.impressions ?? 0),
-      conversions: Number(metrics.conversions ?? 0),
-      conversionsValue: Number(metrics.conversionsValue ?? 0),
-      allConversions: Number(metrics.allConversions ?? 0),
-    };
-    await db.googleAdsCampaignDay.upsert({
-      where: {
-        date_campaignId: { date: data.date, campaignId: data.campaignId },
-      },
-      create: data,
-      update: data,
-    });
-    campaignDays++;
+  for (let year = HISTORY_START_YEAR; year <= currentYear; year++) {
+    const start = `${year}-01-01`;
+    const end = year === currentYear ? isoDate(0) : `${year}-12-31`;
+    const rows = await gaqlSearch(
+      clientCustomerId,
+      `SELECT segments.date, campaign.id, campaign.name, campaign.status,
+              metrics.cost_micros, metrics.clicks, metrics.impressions,
+              metrics.conversions, metrics.conversions_value, metrics.all_conversions
+       FROM campaign
+       WHERE segments.date BETWEEN '${start}' AND '${end}'`,
+      managerCustomerId,
+    );
+    for (const row of rows) {
+      const campaign = row.campaign as { id?: string; name?: string; status?: string };
+      const segments = row.segments as { date?: string };
+      const metrics = row.metrics as {
+        costMicros?: string;
+        clicks?: string;
+        impressions?: string;
+        conversions?: number;
+        conversionsValue?: number;
+        allConversions?: number;
+      };
+      if (!campaign?.id || !segments?.date) continue;
+      const key = `${segments.date}:${campaign.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      campaignData.push({
+        date: new Date(segments.date),
+        campaignId: String(campaign.id),
+        campaignName: campaign.name ?? "",
+        campaignStatus: campaign.status ?? "",
+        costMicros: BigInt(metrics.costMicros ?? "0"),
+        clicks: Number(metrics.clicks ?? 0),
+        impressions: Number(metrics.impressions ?? 0),
+        conversions: Number(metrics.conversions ?? 0),
+        conversionsValue: Number(metrics.conversionsValue ?? 0),
+        allConversions: Number(metrics.allConversions ?? 0),
+      });
+    }
+    console.log(`Google Ads sync: year ${year} → ${rows.length} campaign-day rows`);
   }
 
-  // call_view rejects segments.date (PROHIBITED_SEGMENT) — it exposes its own
-  // start_call_date_time instead, and only retains a limited recent window
-  // server-side. Pull all available rows and filter by date in code.
-  const callCutoff = new Date();
-  callCutoff.setDate(callCutoff.getDate() - CALL_LOOKBACK_DAYS);
+  // Wipe and reload campaign history in bulk. A full-history reload each sync
+  // keeps recent (restated) days correct without per-row upserts, and chunked
+  // createMany stays well within the function time budget.
+  await db.googleAdsCampaignDay.deleteMany({});
+  for (const part of chunk(campaignData, INSERT_CHUNK)) {
+    await db.googleAdsCampaignDay.createMany({ data: part });
+  }
+  const campaignDays = campaignData.length;
 
+  // call_view rejects segments.date (PROHIBITED_SEGMENT) and only retains a
+  // limited window server-side, so pull everything it has. Timestamps come
+  // back as account-time-zone wall-clock strings; convert to correct UTC.
   const callRows = await gaqlSearch(
     clientCustomerId,
     `SELECT call_view.resource_name, call_view.start_call_date_time,
@@ -205,9 +237,8 @@ export async function runGoogleAdsSync(): Promise<SyncResult> {
     if (!call?.resourceName) continue;
 
     const startCallAt = call.startCallDateTime
-      ? new Date(call.startCallDateTime.replace(" ", "T"))
+      ? accountWallClockToUtc(call.startCallDateTime)
       : null;
-    if (startCallAt && startCallAt < callCutoff) continue;
 
     const data = {
       resourceName: call.resourceName,

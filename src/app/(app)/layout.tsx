@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
@@ -36,6 +37,11 @@ export default async function AppLayout({
                   {item.label}
                 </Link>
               ))}
+              {can(session.user, "integration:manage") && (
+                <Link href="/google-ads" className="hover:text-foreground">
+                  Google Ads
+                </Link>
+              )}
               {session.user.role === "OWNER" && (
                 <Link href="/settings/users" className="hover:text-foreground">
                   Settings
