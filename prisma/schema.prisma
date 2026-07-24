@@ -128,11 +128,41 @@ model User {
 // write/mutate operation. See project memory "project-google-ads-management"
 // for why this must stay read-only (dedicated Read-only-permissioned login).
 model GoogleAdsConnection {
-  id                     String   @id @default(cuid())
+  id                     String    @id @default(cuid())
   connectedEmail         String
   refreshTokenEncrypted  String
-  connectedAt            DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  managerCustomerId      String?
+  clientCustomerId       String?
+  lastSyncedAt           DateTime?
+  connectedAt            DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+}
+
+model GoogleAdsCampaignDay {
+  id              String   @id @default(cuid())
+  date            DateTime @db.Date
+  campaignId      String
+  campaignName    String
+  campaignStatus  String
+  costMicros      BigInt
+  clicks          Int
+  impressions     Int
+  conversions     Float
+  conversionsValue Float
+  allConversions  Float
+
+  @@unique([date, campaignId])
+}
+
+model GoogleAdsCall {
+  resourceName      String    @id
+  startCallAt       DateTime?
+  durationSeconds   Int
+  callerAreaCode    String?
+  callerCountryCode String?
+  callType          String?
+  callStatus        String?
+  campaignName      String?
 }
 
 model Contact {

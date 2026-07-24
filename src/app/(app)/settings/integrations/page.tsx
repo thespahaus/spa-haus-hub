@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { can } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { DisconnectGoogleAdsButton } from "@/components/settings/disconnect-google-ads-button";
+import { SyncGoogleAdsButton } from "@/components/settings/sync-google-ads-button";
 
 const STATUS_MESSAGES: Record<string, string> = {
   denied: "Google sign-in was cancelled — nothing was connected.",
@@ -52,15 +53,20 @@ export default async function IntegrationsSettingsPage({
         </p>
 
         {connection ? (
-          <div className="flex items-center justify-between rounded border p-3 text-sm">
-            <span>
-              Connected as <strong>{connection.connectedEmail}</strong>
-              <span className="text-muted-foreground">
-                {" "}
-                since {connection.connectedAt.toLocaleDateString()}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between rounded border p-3 text-sm">
+              <span>
+                Connected as <strong>{connection.connectedEmail}</strong>
+                <span className="text-muted-foreground">
+                  {" "}
+                  since {connection.connectedAt.toLocaleDateString()}
+                  {connection.lastSyncedAt &&
+                    ` · last synced ${connection.lastSyncedAt.toLocaleString()}`}
+                </span>
               </span>
-            </span>
-            <DisconnectGoogleAdsButton />
+              <DisconnectGoogleAdsButton />
+            </div>
+            <SyncGoogleAdsButton />
           </div>
         ) : (
           <Button
