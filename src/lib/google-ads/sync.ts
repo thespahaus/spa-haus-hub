@@ -29,6 +29,7 @@ async function discoverAccounts(): Promise<{
     throw new Error("The connected Google account can't access any Ads accounts");
   }
 
+  const attemptErrors: string[] = [];
   for (const candidateManager of accessible) {
     try {
       const rows = await gaqlSearch(
@@ -38,6 +39,10 @@ async function discoverAccounts(): Promise<{
          FROM customer_client
          WHERE customer_client.level <= 1`,
         candidateManager,
+      );
+      console.log(
+        `Google Ads discovery: customer ${candidateManager} returned ${rows.length} customer_client row(s):`,
+        JSON.stringify(rows),
       );
       const clients = rows
         .map((r) => r.customerClient as {
@@ -57,11 +62,15 @@ async function discoverAccounts(): Promise<{
         });
         return result;
       }
-    } catch {
-      // Not a manager account or not queryable with this login — try the next.
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Google Ads discovery failed for customer ${candidateManager}:`, message);
+      attemptErrors.push(`${candidateManager}: ${message}`);
     }
   }
-  throw new Error("Couldn't find a client ad account under the connected login");
+  throw new Error(
+    `Couldn't find a client ad account under the connected login. Tried: [${accessible.join(", ")}]. Errors: ${attemptErrors.join(" | ") || "none — queries succeeded but returned no non-manager client accounts"}`,
+  );
 }
 
 export type SyncResult = {
