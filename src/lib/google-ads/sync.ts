@@ -74,6 +74,25 @@ async function discoverAccounts(): Promise<{
   // Fall back to just checking whether each candidate has campaigns at all.
   for (const candidate of accessible) {
     try {
+      // Verify account type explicitly rather than trusting "the campaign
+      // query didn't throw" alone — that signal turned out to be unreliable
+      // (a manager account query transiently succeeded once and got a bad
+      // pairing cached, breaking every sync after it).
+      const customerRows = await gaqlSearch(
+        candidate,
+        `SELECT customer.id, customer.manager FROM customer LIMIT 1`,
+        candidate,
+      );
+      const isManager = (customerRows[0]?.customer as { manager?: boolean })
+        ?.manager;
+      if (isManager !== false) {
+        console.log(
+          `Google Ads discovery fallback: customer ${candidate} is not a non-manager client (manager=${isManager}), skipping`,
+        );
+        attemptErrors.push(`${candidate}: reported as manager=${isManager}, not a usable client`);
+        continue;
+      }
+
       const rows = await gaqlSearch(
         candidate,
         `SELECT campaign.id FROM campaign LIMIT 1`,
