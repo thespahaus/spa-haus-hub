@@ -123,6 +123,18 @@ model User {
   contacts      Contact[]  @relation("ContactOwner")
 }
 
+// Read-only Google Ads reporting connection. Stores only what's needed to
+// refresh an access token for GAQL search/searchStream calls — never a
+// write/mutate operation. See project memory "project-google-ads-management"
+// for why this must stay read-only (dedicated Read-only-permissioned login).
+model GoogleAdsConnection {
+  id                     String   @id @default(cuid())
+  connectedEmail         String
+  refreshTokenEncrypted  String
+  connectedAt            DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
 model Contact {
   id        String        @id @default(cuid())
   firstName String

@@ -7,7 +7,8 @@ export type Action =
   | "task:write"
   | "task:assign"
   | "user:manage"
-  | "installation:write";
+  | "installation:write"
+  | "integration:manage";
 
 export type PermissionUser = { role: string } | null | undefined;
 
